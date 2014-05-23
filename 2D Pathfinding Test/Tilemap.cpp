@@ -88,22 +88,20 @@ void Tilemap::draw()
 			if(pT == NULL)
 				continue;
 
-			if(pT->is_walkable())
-				canvas.draw_box(clan::Rect(x * TILE_SIZE, y * TILE_SIZE, clan::Size(TILE_SIZE, TILE_SIZE)), clan::Colorf::white);
-			else
-				canvas.fill_rect(clan::Rect(x * TILE_SIZE, y * TILE_SIZE, clan::Size(TILE_SIZE, TILE_SIZE)), clan::Colorf::red);
+			canvas.fill_rect(clan::Rect(x * TILE_SIZE, y * TILE_SIZE, clan::Size(TILE_SIZE, TILE_SIZE)), pT->get_background_color());
 		}
 	}
 }
 
 
-Tile** Tilemap::get_neighbors(clan::Vec2i pos)
+std::list<Tile*> Tilemap::get_neighbors(clan::Vec2i pos)
 {
-	Tile** retval = new Tile*[4];
-	retval[0] = m_pTiles[pos.x][pos.y-1];
-	retval[1] = m_pTiles[pos.x+1][pos.y];
-	retval[2] = m_pTiles[pos.x][pos.y+1];
-	retval[3] = m_pTiles[pos.x-1][pos.y];
+	std::list<Tile*> retval;
+
+	retval.push_back(m_pTiles[pos.x][pos.y-1]);
+	retval.push_back(m_pTiles[pos.x+1][pos.y]);
+	retval.push_back(m_pTiles[pos.x][pos.y+1]);
+	retval.push_back(m_pTiles[pos.x-1][pos.y]);
 
 	return retval;
 }
@@ -116,63 +114,62 @@ Tile* Tilemap::build_path_A(Tile* start, Tile* end)
 
 	std::list<Tile*> explored;
 
-
-	while(!reachable.empty())
+	
+	while (!reachable.empty())
 	{
-		Tile* pT = *reachable.begin();
+		std::list<Tile*>::iterator itT = reachable.begin();
+		Tile* pT = *itT;
 
-		if(pT == end)
+		if (pT == end)
 		{
-			end->set_previous_tile(pT);
 			return end;
 		}
 
-		reachable.remove(pT);
+		reachable.erase(itT);
 		explored.push_back(pT);
 
-		std::list<Tile*> new_reachable;
-		Tile** neighbors = get_neighbors(pT->get_pos());
 
-		for(int i = 0; i < 4; i++)
+		std::list<Tile*> new_reachable = get_neighbors(pT->get_pos());
+
+		// Remove already explored tiles from the list		
+		for (Tile* pExp : explored)
 		{
-			Tile* neighbor = neighbors[i];
-			bool exp = false;
-
-
-			std::list<Tile*>::iterator itTile;		
-			for(itTile = explored.begin(); itTile != explored.end(); itTile++)
+			std::list<Tile*>::iterator itNR = new_reachable.begin();
+			while (itNR != new_reachable.end())
 			{
-				if(neighbor == (*itTile))
+				if (*itNR == pExp)
 				{
-					exp = true;
+					new_reachable.erase(itNR);
 					break;
 				}
+				else
+				{
+					itNR++;
+				}
 			}
-
-			if(exp)
-				continue;
-
-			if(!neighbor->is_walkable())
-				continue;
-
-			new_reachable.push_back(neighbor);
 		}
 
-		std::list<Tile*>::iterator itTile;
-		std::list<Tile*>::iterator itTile2;
-		for(itTile = new_reachable.begin(); itTile != new_reachable.end(); itTile++)
+		// Remove impassable tiles
+		std::list<Tile*>::iterator itWalk = new_reachable.begin();
+		while (itWalk != new_reachable.end())
 		{
-			for(itTile2 = reachable.begin(); itTile2 != reachable.end(); itTile2++)
+			if (!(*itWalk)->is_walkable())
 			{
-				bool in = false;
-				if((*itTile) == (*itTile2))
-					in = true;
+				itWalk = new_reachable.erase(itWalk);			
+			}
+			else
+			{
+				itWalk++;
+			}
 
-				if(!in)
-				{
-					(*itTile)->set_previous_tile(pT);
-					reachable.push_back(*itTile);
-				}
+		}
+
+		for (Tile* pR : new_reachable)
+		{
+			if (std::find(reachable.begin(), reachable.end(), pR) == reachable.end())
+			{
+				pR->set_previous_tile(pT);
+				reachable.push_back(pR);
 			}
 		}
 	}

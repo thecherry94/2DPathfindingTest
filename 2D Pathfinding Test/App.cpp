@@ -8,13 +8,8 @@ int App::main(const std::vector<std::string>& args)
 	bool quit = false;
 	Tilemap map(clan::Size(10, 10));
 
-	Tile* path = map.build_path_A(map.get_tile(clan::Vec2i(1, 1)), map.get_tile(clan::Vec2i(8, 8)));
-
-	if(path == NULL)
-		quit = true;
-
-	
-
+	Tile* path = map.build_path_A(map.get_tile(clan::Vec2i(1, 1)), map.get_tile(clan::Vec2i(8, 1)));
+	path->mark_previous_tiles_recursive();
 
 	clan::DisplayWindowDescription desc;
 	desc.set_position(clan::Rect(-800, 100, clan::Size(800, 600)), false);

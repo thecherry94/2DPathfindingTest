@@ -23,11 +23,12 @@ class Tilemap
 
 		Tilemap(clan::Size);
 
-		Tile** get_neighbors(clan::Vec2i);
+		std::list<Tile*> get_neighbors(clan::Vec2i);
 		Tile* get_tile(clan::Vec2i pos) { return m_pTiles[pos.x][pos.y]; }
 
 		void draw();
 		Tile* build_path_A(Tile*, Tile*);
+
 };
 
 
